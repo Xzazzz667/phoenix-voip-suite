@@ -8,6 +8,7 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Header } from "@/components/layout/Header";
 import Dashboard from "./pages/Dashboard";
 import OrderNumber from "./pages/OrderNumber";
+import NumberAuthorization from "./pages/NumberAuthorization";
 import { SignupForm } from "@/components/auth/SignupForm";
 import NotFound from "./pages/NotFound";
 
@@ -32,6 +33,7 @@ const App = () => (
                       <Route path="/" element={<Dashboard />} />
                       <Route path="/order-number" element={<OrderNumber />} />
                       <Route path="/configuration/account" element={<div className="p-6">Configuration du compte</div>} />
+                      <Route path="/configuration/authorizations" element={<NumberAuthorization />} />
                       <Route path="/configuration/trunks" element={<div className="p-6">Gestion des trunks</div>} />
                       <Route path="/configuration/users" element={<div className="p-6">Gestion des utilisateurs</div>} />
                       <Route path="/finances/recharge" element={<div className="p-6">Recharge de compte</div>} />
