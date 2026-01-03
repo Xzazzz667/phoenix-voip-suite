@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.send-authorization-email]
 verify_jwt = false
+
+[functions.yeti-api]
+verify_jwt = false
