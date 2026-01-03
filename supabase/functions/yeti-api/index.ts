@@ -83,8 +83,8 @@ serve(async (req) => {
       const authResponse = await fetch(`${YETI_API_BASE}/auth`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          'Content-Type': 'application/vnd.api+json',
+          'Accept': 'application/vnd.api+json',
         },
         body: JSON.stringify({
           auth: {
@@ -133,8 +133,8 @@ serve(async (req) => {
     const fetchOptions: RequestInit = {
       method: method,
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        'Content-Type': 'application/vnd.api+json',
+        'Accept': 'application/vnd.api+json',
         'Authorization': `Bearer ${yetiToken}`,
       },
     };
