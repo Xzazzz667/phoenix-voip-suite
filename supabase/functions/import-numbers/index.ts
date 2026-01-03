@@ -32,6 +32,16 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // JWT verification is handled by Supabase config (verify_jwt = true)
+    // Additional validation: check Authorization header exists
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     
@@ -39,9 +49,17 @@ Deno.serve(async (req) => {
 
     const { csvData } = await req.json();
     
-    if (!csvData) {
+    if (!csvData || typeof csvData !== "string") {
       return new Response(
-        JSON.stringify({ error: "CSV data is required" }),
+        JSON.stringify({ error: "CSV data is required and must be a string" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate CSV size (max 5MB)
+    if (csvData.length > 5 * 1024 * 1024) {
+      return new Response(
+        JSON.stringify({ error: "CSV data too large (max 5MB)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

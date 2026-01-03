@@ -7,6 +7,28 @@ const corsHeaders = {
 
 const YETI_API_BASE = 'https://sbc.dvsconnect.com/api/rest/customer/v1';
 
+// Rate limiting: simple in-memory store (resets on function restart)
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT = 60; // requests per minute
+const RATE_WINDOW = 60 * 1000; // 1 minute in ms
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = rateLimitStore.get(ip);
+  
+  if (!record || now > record.resetTime) {
+    rateLimitStore.set(ip, { count: 1, resetTime: now + RATE_WINDOW });
+    return true;
+  }
+  
+  if (record.count >= RATE_LIMIT) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -14,16 +36,49 @@ serve(async (req) => {
   }
 
   try {
-    const url = new URL(req.url);
+    // Rate limiting based on IP
+    const clientIP = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+    if (!checkRateLimit(clientIP)) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     
     const { endpoint, method = 'GET', data, auth } = body;
+
+    // Validate endpoint format to prevent injection
+    if (!endpoint || typeof endpoint !== "string" || !/^\/[a-zA-Z0-9/_-]*$/.test(endpoint)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid endpoint format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate method
+    const allowedMethods = ["GET", "POST", "PUT", "DELETE", "PATCH"];
+    if (!allowedMethods.includes(method.toUpperCase())) {
+      return new Response(
+        JSON.stringify({ error: "Invalid HTTP method" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     
     console.log(`[Yeti API Proxy] ${method} ${endpoint}`);
 
     // Special case for authentication
     if (endpoint === '/auth') {
       console.log('[Yeti API Proxy] Authentication request');
+      
+      // Validate auth credentials are provided
+      if (!auth?.username || !auth?.password) {
+        return new Response(
+          JSON.stringify({ error: 'Username and password are required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       
       const authResponse = await fetch(`${YETI_API_BASE}/auth`, {
         method: 'POST',
@@ -33,8 +88,8 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           auth: {
-            login: auth?.username,
-            password: auth?.password,
+            login: auth.username,
+            password: auth.password,
           }
         }),
       });
@@ -44,9 +99,9 @@ serve(async (req) => {
       console.log(`[Yeti API Proxy] Auth response status: ${authResponse.status}`);
       
       if (!authResponse.ok) {
-        console.error('[Yeti API Proxy] Auth failed:', authData);
+        console.error('[Yeti API Proxy] Auth failed');
         return new Response(
-          JSON.stringify({ error: 'Authentication failed', details: authData }),
+          JSON.stringify({ error: 'Authentication failed' }),
           { 
             status: authResponse.status, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -104,7 +159,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[Yeti API Proxy] Error:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
