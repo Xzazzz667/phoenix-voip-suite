@@ -143,18 +143,47 @@ const OrderNumber = () => {
     }
   };
 
-  const handleOrder = () => {
+  const [ordering, setOrdering] = useState(false);
+
+  const handleOrder = async () => {
     if (selectedNumbers.size === 0) {
       toast.error("Veuillez sélectionner au moins un numéro");
       return;
     }
     
+    setOrdering(true);
     const selectedList = numbers.filter(n => selectedNumbers.has(n.id));
-    toast.success(`Commande de ${selectedNumbers.size} numéro(s) en cours de traitement`, {
-      description: selectedList.slice(0, 3).map(n => formatPhoneNumber(n.numero)).join(", ") + 
-        (selectedList.length > 3 ? "..." : ""),
-    });
-    setSelectedNumbers(new Set());
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("send-order-email", {
+        body: {
+          numbers: selectedList.map(n => ({
+            id: n.id,
+            numero: n.numero,
+            prefix: n.prefix,
+            region: n.region
+          })),
+          orderedBy: "Utilisateur connecté"
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success(`Commande de ${selectedNumbers.size} numéro(s) envoyée`, {
+        description: "Un email a été envoyé à l'administrateur pour traitement",
+      });
+      
+      // Remove ordered numbers from the list
+      setNumbers(prev => prev.filter(n => !selectedNumbers.has(n.id)));
+      setSelectedNumbers(new Set());
+    } catch (error) {
+      console.error("Order error:", error);
+      toast.error("Erreur lors de la commande", {
+        description: "Veuillez réessayer"
+      });
+    } finally {
+      setOrdering(false);
+    }
   };
 
   const handleRefresh = () => {
@@ -185,12 +214,12 @@ const OrderNumber = () => {
           <Button
             variant="default" 
             onClick={handleOrder}
-            disabled={selectedNumbers.size === 0}
+            disabled={selectedNumbers.size === 0 || ordering}
             className="gap-2"
           >
-            <ShoppingCart className="w-4 h-4" />
-            Commander les SDA
-            {selectedNumbers.size > 0 && (
+            <ShoppingCart className={`w-4 h-4 ${ordering ? "animate-spin" : ""}`} />
+            {ordering ? "Commande en cours..." : "Commander les SDA"}
+            {selectedNumbers.size > 0 && !ordering && (
               <Badge variant="secondary" className="ml-1">
                 {selectedNumbers.size}
               </Badge>
