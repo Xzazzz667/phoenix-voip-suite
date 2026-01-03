@@ -7,8 +7,11 @@ import {
   User, 
   CreditCard,
   Globe,
-  Menu
+  Menu,
+  RefreshCw
 } from "lucide-react"
+import { useYetiBalance } from "@/hooks/useYetiBalance"
+import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -25,6 +28,15 @@ import { cn } from "@/lib/utils"
 
 export function Header() {
   const [searchQuery, setSearchQuery] = useState("")
+  const { balance, currency, isLoading, refetch } = useYetiBalance()
+  const { username, logout } = useAuth()
+  
+  const formatBalance = (value: number, curr: string) => {
+    return new Intl.NumberFormat('fr-FR', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    }).format(value) + ' ' + curr
+  }
 
   return (
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-50 backdrop-blur-sm">
@@ -49,7 +61,16 @@ export function Header() {
         {/* Balance */}
         <div className="hidden sm:flex items-center gap-2 bg-turquoise/10 text-turquoise border border-turquoise/20 px-4 py-2 rounded-full">
           <CreditCard className="w-4 h-4" />
-          <span className="font-semibold">Balance: 21,48 EUR</span>
+          <span className="font-semibold">
+            {isLoading ? 'Chargement...' : `Balance: ${formatBalance(balance, currency)}`}
+          </span>
+          <button 
+            onClick={refetch} 
+            className="ml-1 hover:opacity-70 transition-opacity"
+            title="Rafraîchir le solde"
+          >
+            <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
 
         {/* Language selector */}
@@ -96,22 +117,26 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-3 px-3 py-2 h-auto">
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground text-sm font-medium">X</span>
+                <span className="text-primary-foreground text-sm font-medium">
+                  {username?.charAt(0).toUpperCase() || 'U'}
+                </span>
               </div>
               <div className="text-left hidden sm:block">
-                <p className="text-sm font-medium">Xavier Limoges</p>
-                <p className="text-xs text-muted-foreground">Admin</p>
+                <p className="text-sm font-medium">{username || 'Utilisateur'}</p>
+                <p className="text-xs text-muted-foreground">Client</p>
               </div>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="flex items-center gap-2">
+          <DropdownMenuLabel className="flex items-center gap-2">
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground text-sm font-medium">X</span>
+                <span className="text-primary-foreground text-sm font-medium">
+                  {username?.charAt(0).toUpperCase() || 'U'}
+                </span>
               </div>
               <div>
-                <p className="text-sm font-medium">Xavier Limoges</p>
-                <p className="text-xs text-muted-foreground">xavier@plugandtel.com</p>
+                <p className="text-sm font-medium">{username || 'Utilisateur'}</p>
+                <p className="text-xs text-muted-foreground">Client Yeti-Switch</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -128,7 +153,10 @@ export function Header() {
               Facturation
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="flex items-center gap-2 text-destructive focus:text-destructive">
+            <DropdownMenuItem 
+              className="flex items-center gap-2 text-destructive focus:text-destructive"
+              onClick={logout}
+            >
               <LogOut className="w-4 h-4" />
               Se déconnecter
             </DropdownMenuItem>
