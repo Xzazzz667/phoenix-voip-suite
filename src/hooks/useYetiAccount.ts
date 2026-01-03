@@ -33,15 +33,31 @@ export function useYetiAccount(): AccountStats {
     setError(null);
     
     try {
-      // Fetch accounts list (balance is in the first account)
-      const accountsData = await callApi('/accounts', 'GET');
-      const accountData = Array.isArray(accountsData) ? accountsData[0] : accountsData;
+      // Fetch accounts list (JSON:API format: data.attributes)
+      const accountsResponse = await callApi('/accounts', 'GET');
+      
+      // Parse JSON:API response format
+      let accountData = null;
+      if (accountsResponse?.data) {
+        // JSON:API format: { data: [{ id, type, attributes: {...} }] }
+        const dataArray = Array.isArray(accountsResponse.data) ? accountsResponse.data : [accountsResponse.data];
+        if (dataArray.length > 0) {
+          accountData = dataArray[0].attributes || dataArray[0];
+        }
+      } else if (Array.isArray(accountsResponse)) {
+        // Fallback: direct array format
+        accountData = accountsResponse[0];
+      } else {
+        accountData = accountsResponse;
+      }
+      
+      console.log('[useYetiAccount] Account data:', accountData);
       
       if (accountData?.balance !== undefined) {
         setBalance(parseFloat(accountData.balance) || 0);
       }
-      if (accountData?.balance_currency) {
-        setCurrency(accountData.balance_currency);
+      if (accountData?.['balance-currency'] || accountData?.balance_currency) {
+        setCurrency(accountData['balance-currency'] || accountData.balance_currency);
       }
 
       // Fetch CDR stats for this month
@@ -51,12 +67,15 @@ export function useYetiAccount(): AccountStats {
       const endDate = now.toISOString().split('T')[0];
       
       try {
-        const cdrsData = await callApi(`/cdrs?time_start_gteq=${startDate}&time_start_lteq=${endDate}`, 'GET');
+        const cdrsResponse = await callApi(`/cdrs?filter[time_start_gteq]=${startDate}&filter[time_start_lteq]=${endDate}`, 'GET');
         
+        // Parse JSON:API format
+        const cdrsData = cdrsResponse?.data || cdrsResponse;
         if (Array.isArray(cdrsData)) {
           setCallsThisMonth(cdrsData.length);
           const totalSeconds = cdrsData.reduce((acc: number, cdr: any) => {
-            return acc + (parseInt(cdr.duration) || 0);
+            const cdrAttrs = cdr.attributes || cdr;
+            return acc + (parseInt(cdrAttrs.duration) || 0);
           }, 0);
           setTotalDuration(formatDuration(totalSeconds));
         }
@@ -67,8 +86,10 @@ export function useYetiAccount(): AccountStats {
 
       // Fetch origination gateways count as proxy for active users/connections
       try {
-        const gatewaysData = await callApi('/origination-gateways', 'GET');
+        const gatewaysResponse = await callApi('/origination-gateways', 'GET');
         
+        // Parse JSON:API format
+        const gatewaysData = gatewaysResponse?.data || gatewaysResponse;
         if (Array.isArray(gatewaysData)) {
           setActiveUsers(gatewaysData.length);
         }
