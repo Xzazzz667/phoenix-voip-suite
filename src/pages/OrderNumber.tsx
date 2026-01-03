@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Phone, Search, ShoppingCart, RefreshCw, Download } from "lucide-react";
+import { Phone, Search, ShoppingCart, RefreshCw, Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,36 +21,19 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PhoneNumber {
   id: string;
   numero: string;
   prefix: string;
   region: string;
+  type: string;
+  status: string;
+  price: number;
 }
 
-const getRegionFromPrefix = (numero: string): { prefix: string; region: string } => {
-  const prefixMap: Record<string, string> = {
-    "331": "Île-de-France",
-    "332": "Nord-Ouest",
-    "333": "Nord-Est",
-    "334": "Sud-Est",
-    "335": "Sud-Ouest",
-    "336": "Mobile",
-    "337": "Mobile",
-    "338": "Services",
-    "339": "Services",
-  };
-  
-  const prefix = numero.substring(0, 3);
-  return {
-    prefix,
-    region: prefixMap[prefix] || "France"
-  };
-};
-
 const formatPhoneNumber = (numero: string): string => {
-  // Format: +33 X XX XX XX XX
   if (numero.startsWith("33")) {
     const withPlus = "+" + numero;
     return withPlus.replace(/(\+33)(\d)(\d{2})(\d{2})(\d{2})(\d{2})/, "$1 $2 $3 $4 $5 $6");
@@ -61,43 +44,64 @@ const formatPhoneNumber = (numero: string): string => {
 const OrderNumber = () => {
   const [numbers, setNumbers] = useState<PhoneNumber[]>([]);
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string>("all");
   const [selectedNumbers, setSelectedNumbers] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
+  const fetchNumbers = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("available_numbers")
+        .select("*")
+        .eq("status", "available")
+        .order("numero");
+
+      if (error) throw error;
+
+      setNumbers(data?.map(n => ({
+        id: n.id,
+        numero: n.numero,
+        prefix: n.prefix,
+        region: n.region,
+        type: n.type,
+        status: n.status,
+        price: Number(n.price) || 0
+      })) || []);
+    } catch (error) {
+      console.error("Error fetching numbers:", error);
+      toast.error("Erreur lors du chargement des numéros");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImportCSV = async () => {
+    setImporting(true);
+    try {
+      const response = await fetch("/data/liste-numeros.csv");
+      const csvData = await response.text();
+
+      const { data, error } = await supabase.functions.invoke("import-numbers", {
+        body: { csvData }
+      });
+
+      if (error) throw error;
+
+      toast.success(data.message);
+      fetchNumbers();
+    } catch (error) {
+      console.error("Import error:", error);
+      toast.error("Erreur lors de l'import des numéros");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchNumbers = async () => {
-      try {
-        const response = await fetch("/data/liste-numeros.csv");
-        const text = await response.text();
-        const lines = text.split("\n").slice(1); // Skip header
-        
-        const parsedNumbers: PhoneNumber[] = lines
-          .filter(line => line.trim())
-          .map((line, index) => {
-            const parts = line.split(";");
-            const numero = parts[1]?.trim() || "";
-            const { prefix, region } = getRegionFromPrefix(numero);
-            return {
-              id: `num-${index}`,
-              numero,
-              prefix,
-              region,
-            };
-          })
-          .filter(n => n.numero);
-
-        setNumbers(parsedNumbers);
-      } catch (error) {
-        console.error("Error loading numbers:", error);
-        toast.error("Erreur lors du chargement des numéros");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchNumbers();
   }, []);
 
@@ -154,9 +158,8 @@ const OrderNumber = () => {
   };
 
   const handleRefresh = () => {
-    setLoading(true);
     setSelectedNumbers(new Set());
-    setTimeout(() => setLoading(false), 500);
+    fetchNumbers();
   };
 
   return (
@@ -170,7 +173,16 @@ const OrderNumber = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button 
+          <Button
+            variant="outline"
+            onClick={handleImportCSV}
+            disabled={importing}
+            className="gap-2"
+          >
+            <Upload className={`w-4 h-4 ${importing ? "animate-spin" : ""}`} />
+            Importer CSV
+          </Button>
+          <Button
             variant="default" 
             onClick={handleOrder}
             disabled={selectedNumbers.size === 0}

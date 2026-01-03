@@ -1,1 +1,4 @@
 project_id = "fbxtflpiszcqgveckyjm"
+
+[functions.import-numbers]
+verify_jwt = false
