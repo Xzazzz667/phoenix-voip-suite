@@ -164,25 +164,25 @@ const Statistics = () => {
       console.error("Error fetching statistics:", error);
       toast.error("Erreur lors du chargement des statistiques");
       
-      // Set demo data for display
+      // Show empty data on error
       setStats({
-        acd: 0.61,
-        asr: 64.2,
-        failedCalls: 116,
-        successfulCalls: 208,
-        totalCalls: 324,
-        totalDuration: 126.78,
-        totalPrice: 0.85,
+        acd: 0,
+        asr: 0,
+        failedCalls: 0,
+        successfulCalls: 0,
+        totalCalls: 0,
+        totalDuration: 0,
+        totalPrice: 0,
       });
       
-      setChartData(generateDemoChartData());
+      setChartData([]);
     } finally {
       setLoading(false);
     }
   };
 
   const generateChartData = (cdrs: any[], granularity: string, range: { from: Date | undefined; to: Date | undefined }): ChartDataPoint[] => {
-    if (!range.from || !range.to || cdrs.length === 0) return generateDemoChartData();
+    if (!range.from || !range.to || cdrs.length === 0) return [];
     
     const groupedData: Map<string, ChartDataPoint> = new Map();
     
@@ -227,23 +227,6 @@ const Statistics = () => {
     });
     
     return Array.from(groupedData.values()).sort((a, b) => a.time.localeCompare(b.time));
-  };
-
-  const generateDemoChartData = (): ChartDataPoint[] => {
-    const data: ChartDataPoint[] = [];
-    const hours = ["11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
-    
-    hours.forEach((hour) => {
-      data.push({
-        time: hour,
-        activeCalls: Math.floor(Math.random() * 3) + 1,
-        successfulCalls: Math.floor(Math.random() * 50) + 10,
-        totalCalls: Math.floor(Math.random() * 80) + 20,
-        duration: Math.floor(Math.random() * 10) + 5,
-      });
-    });
-    
-    return data;
   };
 
   useEffect(() => {
