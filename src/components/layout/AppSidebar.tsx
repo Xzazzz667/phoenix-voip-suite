@@ -27,6 +27,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
+import logo from "@/assets/logo.png"
 
 const menuItems = [
   {
@@ -108,12 +109,10 @@ export function AppSidebar() {
       <SidebarContent className="bg-sidebar text-sidebar-foreground">
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-6 border-b border-sidebar-border">
-          <div className="w-8 h-8 bg-gradient-to-br from-turquoise to-primary rounded-lg flex items-center justify-center">
-            <Phone className="w-4 h-4 text-white" />
-          </div>
+          <img src={logo} alt="DATA VOIP SOLUTIONS" className="w-10 h-10 rounded-lg object-cover" />
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="text-lg font-bold text-sidebar-accent-foreground">DATA VOIP SOLUTIONS</span>
+              <span className="text-sm font-bold text-sidebar-accent-foreground leading-tight">DATA VOIP SOLUTIONS</span>
               <span className="text-xs text-sidebar-foreground opacity-70">VoIP Management</span>
             </div>
           )}
