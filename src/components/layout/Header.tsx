@@ -10,7 +10,7 @@ import {
   Menu,
   RefreshCw
 } from "lucide-react"
-import { useYetiBalance } from "@/hooks/useYetiBalance"
+import { useYetiAccount } from "@/hooks/useYetiAccount"
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils"
 
 export function Header() {
   const [searchQuery, setSearchQuery] = useState("")
-  const { balance, currency, isLoading, refetch } = useYetiBalance()
+  const { balance, currency, isLoading, refetch } = useYetiAccount()
   const { username, logout } = useAuth()
   
   const formatBalance = (value: number, curr: string) => {
