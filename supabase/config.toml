@@ -2,3 +2,6 @@ project_id = "fbxtflpiszcqgveckyjm"
 
 [functions.import-numbers]
 verify_jwt = false
+
+[functions.send-authorization-email]
+verify_jwt = false

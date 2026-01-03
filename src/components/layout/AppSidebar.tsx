@@ -12,7 +12,8 @@ import {
   TrendingUp,
   FileText,
   ChevronRight,
-  ShoppingCart
+  ShoppingCart,
+  Shield
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
@@ -48,9 +49,9 @@ const menuItems = [
     icon: Settings,
     items: [
       { title: "Mon compte", url: "/configuration/account", icon: Users },
+      { title: "Autorisation numéros", url: "/configuration/authorizations", icon: Shield },
       { title: "Trunks", url: "/configuration/trunks", icon: Phone },
       { title: "Utilisateurs", url: "/configuration/users", icon: Users },
-      { title: "Autorisations", url: "/configuration/permissions", icon: Settings },
     ]
   },
   {

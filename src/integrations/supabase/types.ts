@@ -86,6 +86,48 @@ export type Database = {
         }
         Relationships: []
       }
+      number_authorizations: {
+        Row: {
+          admin_comment: string | null
+          comment: string | null
+          created_at: string
+          document_urls: string[]
+          id: string
+          numero: string
+          processed_at: string | null
+          requester_email: string
+          requester_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_comment?: string | null
+          comment?: string | null
+          created_at?: string
+          document_urls?: string[]
+          id?: string
+          numero: string
+          processed_at?: string | null
+          requester_email: string
+          requester_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_comment?: string | null
+          comment?: string | null
+          created_at?: string
+          document_urls?: string[]
+          id?: string
+          numero?: string
+          processed_at?: string | null
+          requester_email?: string
+          requester_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       phone_numbers: {
         Row: {
           comment: string
