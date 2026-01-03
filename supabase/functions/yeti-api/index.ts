@@ -47,10 +47,14 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     
-    const { endpoint, method = 'GET', data, auth } = body;
+    const { endpoint, method = 'GET', data, auth, params } = body;
 
     // Validate endpoint format to prevent injection
-    if (!endpoint || typeof endpoint !== "string" || !/^\/[a-zA-Z0-9/_-]*$/.test(endpoint)) {
+    // Allow path segments only (query params should be passed in 'params' object)
+    const endpointPath = endpoint?.split('?')[0] || '';
+    const queryString = endpoint?.includes('?') ? endpoint.split('?')[1] : '';
+    
+    if (!endpoint || typeof endpoint !== "string" || !/^\/[a-zA-Z0-9/_-]*/.test(endpointPath)) {
       return new Response(
         JSON.stringify({ error: "Invalid endpoint format" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -127,7 +131,11 @@ serve(async (req) => {
     }
 
     // Proxy the request to Yeti API
-    const yetiUrl = `${YETI_API_BASE}${endpoint}`;
+    // Build URL with query params if present
+    let yetiUrl = `${YETI_API_BASE}${endpointPath}`;
+    if (queryString) {
+      yetiUrl += `?${queryString}`;
+    }
     console.log(`[Yeti API Proxy] Calling: ${yetiUrl}`);
 
     const fetchOptions: RequestInit = {
