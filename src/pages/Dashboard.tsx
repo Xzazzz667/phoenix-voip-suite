@@ -12,7 +12,7 @@ import {
   Clock,
   MapPin
 } from "lucide-react"
-import { useYetiBalance } from "@/hooks/useYetiBalance"
+import { useYetiAccount } from "@/hooks/useYetiAccount"
 
 // Mock data
 const recentCharges = [
@@ -70,13 +70,17 @@ const campaignColumns = [
 ]
 
 export default function Dashboard() {
-  const { balance, currency, isLoading } = useYetiBalance()
+  const { balance, currency, callsThisMonth, totalDuration, activeUsers, isLoading } = useYetiAccount()
   
   const formatBalance = (value: number, curr: string) => {
     return new Intl.NumberFormat('fr-FR', { 
       minimumFractionDigits: 2, 
       maximumFractionDigits: 2 
     }).format(value) + ' ' + curr
+  }
+  
+  const formatNumber = (value: number) => {
+    return new Intl.NumberFormat('fr-FR').format(value)
   }
 
   return (
@@ -105,19 +109,17 @@ export default function Dashboard() {
         
         <StatsCard
           title="Appels ce mois"
-          value="2,847"
-          description="Durée totale: 156h 32m"
+          value={isLoading ? 'Chargement...' : formatNumber(callsThisMonth)}
+          description={`Durée totale: ${totalDuration}`}
           icon={Phone}
-          trend={{ value: 12.5, label: "vs mois dernier", isPositive: true }}
           className="bg-gradient-to-br from-primary/10 to-secondary/10 border-primary/20"
         />
         
         <StatsCard
-          title="Utilisateurs actifs"
-          value="23"
-          description="2 nouveaux cette semaine"
+          title="Passerelles actives"
+          value={isLoading ? 'Chargement...' : formatNumber(activeUsers)}
+          description="Connexions d'origine"
           icon={Users}
-          trend={{ value: 8.1, label: "vs mois dernier", isPositive: true }}
           className="bg-gradient-to-br from-success/10 to-turquoise/10 border-success/20"
         />
         
