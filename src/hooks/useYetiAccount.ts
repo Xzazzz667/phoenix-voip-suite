@@ -33,8 +33,9 @@ export function useYetiAccount(): AccountStats {
     setError(null);
     
     try {
-      // Fetch account info (balance)
-      const accountData = await callApi('/account', 'GET');
+      // Fetch accounts list (balance is in the first account)
+      const accountsData = await callApi('/accounts', 'GET');
+      const accountData = Array.isArray(accountsData) ? accountsData[0] : accountsData;
       
       if (accountData?.balance !== undefined) {
         setBalance(parseFloat(accountData.balance) || 0);
