@@ -12,6 +12,7 @@ import {
   Clock,
   MapPin
 } from "lucide-react"
+import { useYetiBalance } from "@/hooks/useYetiBalance"
 
 // Mock data
 const recentCharges = [
@@ -69,6 +70,15 @@ const campaignColumns = [
 ]
 
 export default function Dashboard() {
+  const { balance, currency, isLoading } = useYetiBalance()
+  
+  const formatBalance = (value: number, curr: string) => {
+    return new Intl.NumberFormat('fr-FR', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    }).format(value) + ' ' + curr
+  }
+
   return (
     <div className="space-y-6 p-6">
       {/* Welcome section */}
@@ -87,10 +97,9 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Solde disponible"
-          value="21,48 EUR"
-          description="Dernière recharge il y a 2 jours"
+          value={isLoading ? 'Chargement...' : formatBalance(balance, currency)}
+          description="Synchronisé avec Yeti-Switch"
           icon={CreditCard}
-          trend={{ value: 5.2, label: "vs mois dernier", isPositive: true }}
           className="bg-gradient-to-br from-turquoise/10 to-primary/10 border-turquoise/20"
         />
         
