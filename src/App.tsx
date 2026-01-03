@@ -7,6 +7,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Header } from "@/components/layout/Header";
 import Dashboard from "./pages/Dashboard";
+import OrderNumber from "./pages/OrderNumber";
 import { SignupForm } from "@/components/auth/SignupForm";
 import NotFound from "./pages/NotFound";
 
@@ -29,6 +30,7 @@ const App = () => (
                   <main className="flex-1 overflow-auto">
                     <Routes>
                       <Route path="/" element={<Dashboard />} />
+                      <Route path="/order-number" element={<OrderNumber />} />
                       <Route path="/configuration/account" element={<div className="p-6">Configuration du compte</div>} />
                       <Route path="/configuration/trunks" element={<div className="p-6">Gestion des trunks</div>} />
                       <Route path="/configuration/users" element={<div className="p-6">Gestion des utilisateurs</div>} />
