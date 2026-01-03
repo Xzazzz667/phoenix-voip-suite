@@ -11,7 +11,8 @@ import {
   List,
   TrendingUp,
   FileText,
-  ChevronRight
+  ChevronRight,
+  ShoppingCart
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
@@ -34,6 +35,12 @@ const menuItems = [
     title: "Tableau de bord",
     url: "/",
     icon: Home,
+    badge: null
+  },
+  {
+    title: "Commande numéro",
+    url: "/order-number",
+    icon: ShoppingCart,
     badge: null
   },
   {
