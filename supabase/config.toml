@@ -1,10 +1,10 @@
 project_id = "fbxtflpiszcqgveckyjm"
 
 [functions.import-numbers]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-authorization-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.yeti-api]
 verify_jwt = false

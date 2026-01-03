@@ -23,11 +23,40 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // JWT verification is handled by Supabase config (verify_jwt = true)
+    // Additional validation: check Authorization header exists
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { authorizationId, numero, requesterName, requesterEmail, documentUrls, comment }: AuthorizationEmailRequest = await req.json();
+    const requestBody = await req.json();
+    
+    // Validate required fields
+    const { authorizationId, numero, requesterName, requesterEmail, documentUrls, comment } = requestBody as AuthorizationEmailRequest;
+    
+    if (!authorizationId || !numero || !requesterName || !requesterEmail) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(requesterEmail)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid email format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     console.log(`Processing authorization request ${authorizationId} for ${numero}`);
 
