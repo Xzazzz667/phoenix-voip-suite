@@ -74,7 +74,7 @@ export function SignupForm() {
                 <Phone className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-foreground">PLUG&TEL</h1>
+                <h1 className="text-3xl font-bold text-foreground">DATA VOIP SOLUTIONS</h1>
                 <p className="text-sm text-muted-foreground">Opérateur VoIP & Intégrateur</p>
               </div>
             </div>

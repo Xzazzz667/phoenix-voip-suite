@@ -113,7 +113,7 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="text-lg font-bold text-sidebar-accent-foreground">PLUG&TEL</span>
+              <span className="text-lg font-bold text-sidebar-accent-foreground">DATA VOIP SOLUTIONS</span>
               <span className="text-xs text-sidebar-foreground opacity-70">VoIP Management</span>
             </div>
           )}
