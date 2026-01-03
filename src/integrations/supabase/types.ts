@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      available_numbers: {
+        Row: {
+          created_at: string
+          id: string
+          numero: string
+          prefix: string
+          price: number | null
+          region: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          numero: string
+          prefix: string
+          price?: number | null
+          region: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          numero?: string
+          prefix?: string
+          price?: number | null
+          region?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contact_leads: {
         Row: {
           company: string | null
