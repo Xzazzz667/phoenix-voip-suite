@@ -104,7 +104,7 @@ export const useAuth = (): AuthContextType => {
 
 // Hook pour appeler l'API Yeti avec authentification
 export const useYetiApi = () => {
-  const { token } = useAuth();
+  const { token, logout } = useAuth();
 
   const callApi = async (endpoint: string, method: string = 'GET', data?: any) => {
     if (!token) {
@@ -126,6 +126,13 @@ export const useYetiApi = () => {
     });
 
     const responseData = await response.json();
+
+    // Handle 401 - token expired, logout user
+    if (response.status === 401) {
+      console.warn('Token expired, logging out...');
+      logout();
+      throw new Error('Session expirée. Veuillez vous reconnecter.');
+    }
 
     // Don't throw for 404 - let the calling code handle missing resources gracefully
     if (!response.ok && response.status !== 404) {
