@@ -13,6 +13,7 @@ import OrderNumber from "./pages/OrderNumber";
 import NumberAuthorization from "./pages/NumberAuthorization";
 import Statistics from "./pages/Statistics";
 import CDR from "./pages/CDR";
+import Pricing from "./pages/Pricing";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -44,7 +45,7 @@ const App = () => (
                           <Route path="/configuration/users" element={<div className="p-6">Gestion des utilisateurs</div>} />
                           <Route path="/finances/recharge" element={<div className="p-6">Recharge de compte</div>} />
                           <Route path="/finances/history" element={<div className="p-6">Historique des recharges</div>} />
-                          <Route path="/finances/pricing" element={<div className="p-6">Liste de prix</div>} />
+                          <Route path="/finances/pricing" element={<Pricing />} />
                           <Route path="/rapport/outbound" element={<div className="p-6">Appels sortants</div>} />
                           <Route path="/rapport/inbound" element={<div className="p-6">Appels entrants</div>} />
                           <Route path="/rapport/cdr" element={<CDR />} />
