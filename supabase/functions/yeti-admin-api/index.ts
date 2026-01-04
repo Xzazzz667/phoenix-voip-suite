@@ -28,30 +28,42 @@ async function getAdminToken(): Promise<string> {
 
   console.log('[Yeti Admin API] Fetching new token...');
   
+  // Admin API uses application/json and auth[username]/auth[password]
   const authResponse = await fetch(`${YETI_ADMIN_API_BASE}/auth`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/vnd.api+json',
-      'Accept': 'application/vnd.api+json',
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
     },
     body: JSON.stringify({
       auth: {
-        login: username,
+        username: username,
         password: password,
       }
     }),
   });
 
+  const responseText = await authResponse.text();
+  console.log(`[Yeti Admin API] Auth response status: ${authResponse.status}`);
+  
   if (!authResponse.ok) {
-    const errorText = await authResponse.text();
-    console.error('[Yeti Admin API] Auth failed:', errorText);
+    console.error('[Yeti Admin API] Auth failed:', responseText);
     throw new Error(`Authentication failed: ${authResponse.status}`);
   }
 
-  const authData = await authResponse.json();
-  const token = authData?.data?.attributes?.jwt;
+  let authData;
+  try {
+    authData = JSON.parse(responseText);
+  } catch (e) {
+    console.error('[Yeti Admin API] Failed to parse auth response:', responseText);
+    throw new Error('Invalid auth response format');
+  }
+
+  // Admin API returns jwt directly, not in data.attributes
+  const token = authData?.jwt;
   
   if (!token) {
+    console.error('[Yeti Admin API] No JWT in response:', authData);
     throw new Error('No JWT token in response');
   }
 
@@ -97,7 +109,7 @@ serve(async (req) => {
       headers: {
         'Content-Type': 'application/vnd.api+json',
         'Accept': 'application/vnd.api+json',
-        'Authorization': `Bearer ${token}`,
+        'Authorization': token, // Admin API uses token directly without Bearer prefix
       },
     });
 
