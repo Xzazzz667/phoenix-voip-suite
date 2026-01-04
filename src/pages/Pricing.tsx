@@ -55,6 +55,14 @@ interface Country {
   };
 }
 
+interface Rateplan {
+  id: string;
+  type: string;
+  attributes: {
+    name: string;
+  };
+}
+
 const Pricing: React.FC = () => {
   const { callApi } = useYetiApi();
   
@@ -67,6 +75,10 @@ const Pricing: React.FC = () => {
   const [checkError, setCheckError] = useState<string | null>(null);
   const [searchedNumber, setSearchedNumber] = useState('');
   
+  // Rateplans state
+  const [rateplans, setRateplans] = useState<Rateplan[]>([]);
+  const [isLoadingRateplans, setIsLoadingRateplans] = useState(false);
+  
   // Full rates list state
   const [fullRates, setFullRates] = useState<FullRateItem[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
@@ -78,10 +90,25 @@ const Pricing: React.FC = () => {
   const [totalRates, setTotalRates] = useState(0);
   const pageSize = 50;
 
-  // Load countries on mount
+  // Load countries and rateplans on mount
   useEffect(() => {
     loadCountries();
+    loadRateplans();
   }, []);
+
+  const loadRateplans = async () => {
+    setIsLoadingRateplans(true);
+    try {
+      const response = await callApi('/rateplans', 'GET');
+      if (response && response.data) {
+        setRateplans(response.data);
+      }
+    } catch (err) {
+      console.error('Error loading rateplans:', err);
+    } finally {
+      setIsLoadingRateplans(false);
+    }
+  };
 
   const loadCountries = async () => {
     setIsLoadingCountries(true);
@@ -302,20 +329,22 @@ const Pricing: React.FC = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="rateplanId">ID du Rateplan (optionnel)</Label>
-                    <div className="relative">
-                      <Info className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="rateplanId"
-                        type="text"
-                        placeholder="Laisser vide pour le rateplan par défaut"
-                        value={rateplanId}
-                        onChange={(e) => setRateplanId(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
+                    <Label htmlFor="rateplanId">Rateplan (optionnel)</Label>
+                    <Select value={rateplanId} onValueChange={setRateplanId}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={isLoadingRateplans ? "Chargement..." : "Rateplan par défaut"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Rateplan par défaut</SelectItem>
+                        {rateplans.map((rateplan) => (
+                          <SelectItem key={rateplan.id} value={rateplan.id}>
+                            {rateplan.attributes.name} (ID: {rateplan.id})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <p className="text-xs text-muted-foreground">
-                      Spécifiez un rateplan ID si nécessaire
+                      Sélectionnez un rateplan pour ce compte
                     </p>
                   </div>
                 </div>
