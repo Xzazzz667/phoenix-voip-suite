@@ -69,6 +69,7 @@ const menuItems = [
     items: [
       { title: "Appels sortants", url: "/rapport/outbound", icon: TrendingUp },
       { title: "Appels entrants", url: "/rapport/inbound", icon: TrendingUp },
+      { title: "CDR", url: "/rapport/cdr", icon: FileText },
       { title: "Statistiques", url: "/rapport/statistics", icon: BarChart3 },
     ]
   },
