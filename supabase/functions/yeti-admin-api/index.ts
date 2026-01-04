@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const YETI_ADMIN_API_BASE = 'https://sbc.dvsconnect.com/api/rest/admin';
+const YETI_ADMIN_API_BASE = 'https://switch.dvsconnect.com/api/rest/admin';
 
 serve(async (req) => {
   // Handle CORS preflight
