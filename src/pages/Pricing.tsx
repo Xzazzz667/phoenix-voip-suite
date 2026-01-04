@@ -330,19 +330,31 @@ const Pricing: React.FC = () => {
                   
                   <div className="space-y-2">
                     <Label htmlFor="rateplanId">Rateplan (optionnel)</Label>
-                    <Select value={rateplanId} onValueChange={setRateplanId}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder={isLoadingRateplans ? "Chargement..." : "Rateplan par défaut"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">Rateplan par défaut</SelectItem>
-                        {rateplans.map((rateplan) => (
-                          <SelectItem key={rateplan.id} value={rateplan.id}>
-                            {rateplan.attributes.name} (ID: {rateplan.id})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-2">
+                      <Select value={rateplanId} onValueChange={setRateplanId}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={isLoadingRateplans ? "Chargement..." : "Rateplan par défaut"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Rateplan par défaut</SelectItem>
+                          {rateplans.map((rateplan) => (
+                            <SelectItem key={rateplan.id} value={rateplan.id}>
+                              {rateplan.attributes.name} (ID: {rateplan.id})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="icon"
+                        onClick={loadRateplans}
+                        disabled={isLoadingRateplans}
+                        title="Rafraîchir les rateplans"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${isLoadingRateplans ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       Sélectionnez un rateplan pour ce compte
                     </p>
