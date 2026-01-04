@@ -130,17 +130,25 @@ const Pricing: React.FC = () => {
     setRatesError(null);
     
     try {
+      // Build endpoint with optional rateplan filter
       let endpoint = `/rates?page[size]=${pageSize}&page[number]=${page}`;
       
       if (prefix && prefix.trim()) {
         endpoint += `&filter[prefix-start]=${encodeURIComponent(prefix.trim())}`;
       }
       
+      // Try filter with rateplan_id if provided
       if (rateplanId && rateplanId.trim()) {
-        endpoint += `&filter[rateplan-id]=${encodeURIComponent(rateplanId.trim())}`;
+        endpoint += `&filter[rateplan_id]=${encodeURIComponent(rateplanId.trim())}`;
       }
       
       const response = await callApi(endpoint, 'GET');
+      
+      // Check if response indicates an error
+      if (response && response.errors) {
+        const errorMsg = response.errors[0]?.detail || response.errors[0]?.title || 'Erreur API';
+        throw new Error(errorMsg);
+      }
       
       if (response && response.data) {
         setFullRates(response.data);
