@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.yeti-api]
 verify_jwt = false
+
+[functions.yeti-admin-api]
+verify_jwt = false
