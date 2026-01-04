@@ -86,7 +86,6 @@ const Pricing: React.FC = () => {
   const [isLoadingCountries, setIsLoadingCountries] = useState(false);
   const [ratesError, setRatesError] = useState<string | null>(null);
   const [prefixFilter, setPrefixFilter] = useState('');
-  const [listRateplanId, setListRateplanId] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalRates, setTotalRates] = useState(0);
   const pageSize = 50;
@@ -125,20 +124,14 @@ const Pricing: React.FC = () => {
     }
   };
 
-  const loadRates = async (page: number = 1, prefix?: string, rateplanId?: string) => {
+  const loadRates = async (page: number = 1, prefix?: string) => {
     setIsLoadingRates(true);
     setRatesError(null);
     
     try {
-      // Use rateplan-specific endpoint if rateplan is selected
-      let endpoint: string;
-      
-      if (rateplanId && rateplanId.trim()) {
-        // Access rates through the rateplan resource
-        endpoint = `/rateplans/${rateplanId}/rates?page[size]=${pageSize}&page[number]=${page}`;
-      } else {
-        endpoint = `/rates?page[size]=${pageSize}&page[number]=${page}`;
-      }
+      // Note: L'API /rates ne supporte pas le filtrage par rateplan
+      // Le sélecteur de rateplan dans cette section est informatif uniquement
+      let endpoint = `/rates?page[size]=${pageSize}&page[number]=${page}`;
       
       if (prefix && prefix.trim()) {
         endpoint += `&filter[prefix-start]=${encodeURIComponent(prefix.trim())}`;
@@ -250,7 +243,7 @@ const Pricing: React.FC = () => {
   };
 
   const handlePrefixSearch = () => {
-    loadRates(1, prefixFilter, listRateplanId);
+    loadRates(1, prefixFilter);
   };
 
   const exportRatesToCSV = () => {
@@ -543,7 +536,7 @@ const Pricing: React.FC = () => {
                 <div className="flex gap-2">
                   <Button 
                     variant="outline" 
-                    onClick={() => loadRates(1, prefixFilter, listRateplanId)}
+                    onClick={() => loadRates(1, prefixFilter)}
                     disabled={isLoadingRates}
                   >
                     <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingRates ? 'animate-spin' : ''}`} />
@@ -561,46 +554,15 @@ const Pricing: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Filters row: rateplan + prefix */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Rateplan selector */}
-                <div className="space-y-2">
-                  <Label>Rateplan</Label>
-                  <div className="flex gap-2">
-                    <Select value={listRateplanId || "__default__"} onValueChange={(val) => setListRateplanId(val === "__default__" ? "" : val)}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder={isLoadingRateplans ? "Chargement..." : "Tous les rateplans"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__default__">Tous les rateplans</SelectItem>
-                        {rateplans.map((rateplan) => (
-                          <SelectItem key={rateplan.id} value={rateplan.id}>
-                            {rateplan.attributes.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="icon"
-                      onClick={loadRateplans}
-                      disabled={isLoadingRateplans}
-                      title="Rafraîchir les rateplans"
-                    >
-                      <RefreshCw className={`h-4 w-4 ${isLoadingRateplans ? 'animate-spin' : ''}`} />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Prefix filter */}
-                <div className="space-y-2">
-                  <Label htmlFor="prefixFilter">Préfixe</Label>
+              {/* Search by prefix */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="prefixFilter" className="sr-only">Filtrer par préfixe</Label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="prefixFilter"
-                      placeholder="Ex: 33 pour France"
+                      placeholder="Filtrer par préfixe (ex: 33 pour France)"
                       value={prefixFilter}
                       onChange={(e) => setPrefixFilter(e.target.value)}
                       className="pl-10"
@@ -608,21 +570,16 @@ const Pricing: React.FC = () => {
                     />
                   </div>
                 </div>
-
-                {/* Search button */}
-                <div className="space-y-2">
-                  <Label className="invisible">Action</Label>
-                  <Button onClick={handlePrefixSearch} disabled={isLoadingRates} className="w-full">
-                    {isLoadingRates ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Search className="mr-2 h-4 w-4" />
-                        Rechercher
-                      </>
-                    )}
-                  </Button>
-                </div>
+                <Button onClick={handlePrefixSearch} disabled={isLoadingRates}>
+                  {isLoadingRates ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Search className="mr-2 h-4 w-4" />
+                      Rechercher
+                    </>
+                  )}
+                </Button>
               </div>
 
               {/* Countries quick filter */}
@@ -648,7 +605,7 @@ const Pricing: React.FC = () => {
                         size="sm"
                         onClick={() => {
                           setPrefixFilter(country.prefix);
-                          loadRates(1, country.prefix, listRateplanId);
+                          loadRates(1, country.prefix);
                         }}
                         className="text-xs"
                       >
