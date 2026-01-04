@@ -127,8 +127,14 @@ export const useYetiApi = () => {
 
     const responseData = await response.json();
 
-    if (!response.ok) {
+    // Don't throw for 404 - let the calling code handle missing resources gracefully
+    if (!response.ok && response.status !== 404) {
       throw new Error(responseData.error || 'API call failed');
+    }
+
+    // Return null for 404 to indicate resource not found
+    if (response.status === 404) {
+      return null;
     }
 
     return responseData;
