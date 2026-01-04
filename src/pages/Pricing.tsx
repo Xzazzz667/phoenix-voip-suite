@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useYetiApi } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,65 +6,75 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Search, Phone, DollarSign, Clock, AlertCircle } from 'lucide-react';
+import { Loader2, Search, Phone, DollarSign, Clock, AlertCircle, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface RateResult {
+interface RateItem {
   id: string;
-  type: string;
-  attributes: {
-    prefix: string;
-    destination_name: string;
-    rate: string;
-    connect_fee: string;
-    interval_start: number;
-    interval_rate: string;
-    valid_from?: string;
-    valid_till?: string;
-  };
+  prefix: string;
+  initial_rate: string;
+  initial_interval: number;
+  next_rate: string;
+  next_interval: number;
+  connect_fee: string;
+  reject_calls: boolean;
+  valid_from?: string;
+  valid_till?: string;
+  network_prefix_id?: number;
+  routing_tag_names?: string[];
 }
 
-interface CheckRateResult {
-  data: RateResult[];
-  meta?: {
-    total_count?: number;
+interface CheckRateResponse {
+  data: {
+    id: string;
+    type: string;
+    attributes: {
+      'rateplan-id': string;
+      number: string;
+      rates: RateItem[];
+    };
   };
 }
 
 const Pricing: React.FC = () => {
   const { callApi } = useYetiApi();
-  const [callerNumber, setCallerNumber] = useState('');
   const [calledNumber, setCalledNumber] = useState('');
+  const [rateplanId, setRateplanId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [rates, setRates] = useState<RateResult[]>([]);
+  const [rates, setRates] = useState<RateItem[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchedNumber, setSearchedNumber] = useState('');
 
   const handleCheckRate = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!calledNumber.trim()) {
-      toast.error('Veuillez entrer un numéro appelé');
+      toast.error('Veuillez entrer un numéro à vérifier');
       return;
     }
 
     setIsLoading(true);
     setError(null);
     setHasSearched(true);
+    setSearchedNumber(calledNumber.trim());
 
     try {
-      // Build the check-rate endpoint with query parameters
-      let endpoint = `/check-rate?number=${encodeURIComponent(calledNumber.trim())}`;
-      
-      if (callerNumber.trim()) {
-        endpoint += `&src_number=${encodeURIComponent(callerNumber.trim())}`;
-      }
+      // Build the JSON:API request body for check-rate
+      const requestData = {
+        data: {
+          type: 'check-rates',
+          attributes: {
+            number: calledNumber.trim(),
+            ...(rateplanId.trim() && { 'rateplan-id': rateplanId.trim() })
+          }
+        }
+      };
 
-      const response = await callApi(endpoint, 'GET');
+      const response = await callApi('/check-rate', 'POST', requestData);
       
-      if (response && response.data) {
-        // Handle JSON:API format
-        const ratesData = Array.isArray(response.data) ? response.data : [response.data];
+      if (response && response.data && response.data.attributes && response.data.attributes.rates) {
+        const ratesData = response.data.attributes.rates;
         setRates(ratesData);
         
         if (ratesData.length === 0) {
@@ -78,7 +88,8 @@ const Pricing: React.FC = () => {
       }
     } catch (err) {
       console.error('Error checking rate:', err);
-      setError(err instanceof Error ? err.message : 'Erreur lors de la vérification du tarif');
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la vérification du tarif';
+      setError(errorMessage);
       toast.error('Erreur lors de la vérification du tarif');
       setRates([]);
     } finally {
@@ -98,11 +109,12 @@ const Pricing: React.FC = () => {
   };
 
   const clearSearch = () => {
-    setCallerNumber('');
     setCalledNumber('');
+    setRateplanId('');
     setRates([]);
     setHasSearched(false);
     setError(null);
+    setSearchedNumber('');
   };
 
   return (
@@ -123,38 +135,20 @@ const Pricing: React.FC = () => {
             Vérifier un tarif
           </CardTitle>
           <CardDescription>
-            Entrez les numéros pour connaître le tarif de cet appel
+            Entrez un numéro de destination pour connaître le tarif applicable
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleCheckRate} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="callerNumber">Numéro appelant (optionnel)</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="callerNumber"
-                    type="tel"
-                    placeholder="Ex: 33612345678"
-                    value={callerNumber}
-                    onChange={(e) => setCallerNumber(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Format international sans le +
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="calledNumber">Numéro appelé *</Label>
+                <Label htmlFor="calledNumber">Numéro de destination *</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="calledNumber"
                     type="tel"
-                    placeholder="Ex: 14155551234"
+                    placeholder="Ex: 33164789654"
                     value={calledNumber}
                     onChange={(e) => setCalledNumber(e.target.value)}
                     className="pl-10"
@@ -163,6 +157,24 @@ const Pricing: React.FC = () => {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Format international sans le +
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="rateplanId">ID du Rateplan (optionnel)</Label>
+                <div className="relative">
+                  <Info className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="rateplanId"
+                    type="text"
+                    placeholder="Laisser vide pour le rateplan par défaut"
+                    value={rateplanId}
+                    onChange={(e) => setRateplanId(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Spécifiez un rateplan ID si nécessaire
                 </p>
               </div>
             </div>
@@ -217,12 +229,9 @@ const Pricing: React.FC = () => {
                 </Badge>
               )}
             </CardTitle>
-            {calledNumber && (
+            {searchedNumber && (
               <CardDescription>
-                Tarifs pour le numéro : <span className="font-mono font-medium">{calledNumber}</span>
-                {callerNumber && (
-                  <> depuis <span className="font-mono font-medium">{callerNumber}</span></>
-                )}
+                Tarifs pour le numéro : <span className="font-mono font-medium">{searchedNumber}</span>
               </CardDescription>
             )}
           </CardHeader>
@@ -245,38 +254,47 @@ const Pricing: React.FC = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Préfixe</TableHead>
-                      <TableHead>Destination</TableHead>
-                      <TableHead className="text-right">Tarif/min</TableHead>
+                      <TableHead className="text-right">Tarif initial</TableHead>
+                      <TableHead className="text-right">Intervalle initial (s)</TableHead>
+                      <TableHead className="text-right">Tarif suivant</TableHead>
+                      <TableHead className="text-right">Intervalle suivant (s)</TableHead>
                       <TableHead className="text-right">Frais connexion</TableHead>
-                      <TableHead className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Clock className="h-4 w-4" />
-                          Intervalle (s)
-                        </div>
-                      </TableHead>
-                      <TableHead className="text-right">Tarif intervalle</TableHead>
+                      <TableHead>Tags</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {rates.map((rate, index) => (
                       <TableRow key={rate.id || index}>
                         <TableCell className="font-mono font-medium">
-                          {rate.attributes?.prefix || '-'}
-                        </TableCell>
-                        <TableCell>
-                          {rate.attributes?.destination_name || '-'}
+                          {rate.prefix || '-'}
                         </TableCell>
                         <TableCell className="text-right font-medium text-primary">
-                          {formatCurrency(rate.attributes?.rate || 0)}
+                          {formatCurrency(rate.initial_rate || 0)}
                         </TableCell>
                         <TableCell className="text-right">
-                          {formatCurrency(rate.attributes?.connect_fee || 0)}
+                          {rate.initial_interval || '-'}
                         </TableCell>
                         <TableCell className="text-right">
-                          {rate.attributes?.interval_start || '-'}
+                          {formatCurrency(rate.next_rate || 0)}
                         </TableCell>
                         <TableCell className="text-right">
-                          {formatCurrency(rate.attributes?.interval_rate || 0)}
+                          {rate.next_interval || '-'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(rate.connect_fee || 0)}
+                        </TableCell>
+                        <TableCell>
+                          {rate.routing_tag_names && rate.routing_tag_names.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {rate.routing_tag_names.map((tag, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
