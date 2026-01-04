@@ -10,9 +10,13 @@ import {
   ArrowUpRight,
   Calendar,
   Clock,
-  MapPin
+  MapPin,
+  Server,
+  RefreshCw,
+  AlertCircle
 } from "lucide-react"
 import { useYetiAccount } from "@/hooks/useYetiAccount"
+import { useYetiAdminNodes } from "@/hooks/useYetiAdminNodes"
 
 // Mock data
 const recentCharges = [
@@ -71,6 +75,7 @@ const campaignColumns = [
 
 export default function Dashboard() {
   const { balance, currency, callsThisMonth, totalDuration, activeUsers, isLoading } = useYetiAccount()
+  const { nodes, isLoading: nodesLoading, error: nodesError, refetch: refetchNodes } = useYetiAdminNodes()
   
   const formatBalance = (value: number, curr: string) => {
     return new Intl.NumberFormat('fr-FR', { 
@@ -194,40 +199,56 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* System Status */}
+      {/* System Status - Nodes from Yeti Admin API */}
       <Card className="animate-fade-in">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-success" />
-            État du système
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Server className="w-5 h-5 text-success" />
+              État du système - Nodes actifs
+            </CardTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => refetchNodes()}
+              disabled={nodesLoading}
+            >
+              <RefreshCw className={`w-4 h-4 ${nodesLoading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-success rounded-full"></div>
-              <div>
-                <p className="font-medium text-foreground">Serveurs VoIP</p>
-                <p className="text-sm text-muted-foreground">Opérationnels</p>
-              </div>
+          {nodesError ? (
+            <div className="flex items-center gap-3 text-destructive">
+              <AlertCircle className="w-5 h-5" />
+              <p>{nodesError}</p>
             </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-success rounded-full"></div>
-              <div>
-                <p className="font-medium text-foreground">API Gateway</p>
-                <p className="text-sm text-muted-foreground">Réponse rapide</p>
-              </div>
+          ) : nodesLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse flex items-center gap-3">
+                  <div className="w-3 h-3 bg-muted rounded-full"></div>
+                  <div className="h-4 bg-muted rounded w-24"></div>
+                </div>
+              ))}
             </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-warning rounded-full"></div>
-              <div>
-                <p className="font-medium text-foreground">Maintenance</p>
-                <p className="text-sm text-muted-foreground">Planifiée 02:00-04:00</p>
-              </div>
+          ) : nodes.length === 0 ? (
+            <p className="text-muted-foreground">Aucun node actif trouvé</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {nodes.map((node) => (
+                <div key={node.id} className="flex items-center gap-3 p-3 rounded-lg bg-success/5 border border-success/20">
+                  <div className="w-3 h-3 bg-success rounded-full animate-pulse"></div>
+                  <div>
+                    <p className="font-medium text-foreground">{node.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {node.signallingIp ? `${node.signallingIp}:${node.signallingPort}` : 'En ligne'}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>
