@@ -331,12 +331,12 @@ const Pricing: React.FC = () => {
                   <div className="space-y-2">
                     <Label htmlFor="rateplanId">Rateplan (optionnel)</Label>
                     <div className="flex gap-2">
-                      <Select value={rateplanId} onValueChange={setRateplanId}>
+                      <Select value={rateplanId || "__default__"} onValueChange={(val) => setRateplanId(val === "__default__" ? "" : val)}>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder={isLoadingRateplans ? "Chargement..." : "Rateplan par défaut"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Rateplan par défaut</SelectItem>
+                          <SelectItem value="__default__">Rateplan par défaut</SelectItem>
                           {rateplans.map((rateplan) => (
                             <SelectItem key={rateplan.id} value={rateplan.id}>
                               {rateplan.attributes.name} (ID: {rateplan.id})
