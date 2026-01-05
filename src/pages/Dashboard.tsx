@@ -7,18 +7,10 @@ import {
   TrendingUp, 
   Users, 
   CreditCard, 
-  ArrowUpRight,
   Calendar,
-  Clock,
-  MapPin,
-  Server,
-  RefreshCw,
-  AlertCircle
+  Clock
 } from "lucide-react"
 import { useYetiAccount } from "@/hooks/useYetiAccount"
-// Désactivé: API Admin requiert whitelist IP non disponible pour Lovable Cloud
-// import { useYetiAdminNodes } from "@/hooks/useYetiAdminNodes"
-
 // Mock data
 const recentCharges = [
   {
@@ -76,8 +68,6 @@ const campaignColumns = [
 
 export default function Dashboard() {
   const { balance, currency, callsThisMonth, totalDuration, activeUsers, isLoading } = useYetiAccount()
-  // Désactivé: API Admin requiert whitelist IP
-  // const { nodes, isLoading: nodesLoading, error: nodesError, refetch: refetchNodes } = useYetiAdminNodes()
   
   const formatBalance = (value: number, curr: string) => {
     return new Intl.NumberFormat('fr-FR', { 
@@ -200,22 +190,6 @@ export default function Dashboard() {
           exportable={false}
         />
       </div>
-
-      {/* System Status - Désactivé: API Admin requiert whitelist IP
-      <Card className="animate-fade-in">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Server className="w-5 h-5 text-success" />
-              État du système - Nodes actifs
-            </CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">Section désactivée - API Admin requiert autorisation IP</p>
-        </CardContent>
-      </Card>
-      */}
     </div>
   )
 }
