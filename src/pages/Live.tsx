@@ -73,9 +73,16 @@ export default function Live() {
         "GET"
       );
       
-      // Si response est null, cela signifie probablement une erreur 403
-      if (response === null) {
+      // Vérifier si c'est une erreur de permission (format modifié par l'edge function)
+      if (response?.error || response?.status === 403) {
         setActiveCallsError("Accès refusé à cette ressource (403)");
+        setActiveCalls([]);
+        return;
+      }
+      
+      // Si response est null ou undefined
+      if (!response) {
+        setActiveCallsError("Erreur de connexion");
         setActiveCalls([]);
         return;
       }

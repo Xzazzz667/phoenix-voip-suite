@@ -156,6 +156,23 @@ serve(async (req) => {
 
     console.log(`[Yeti API Proxy] Response status: ${response.status}`);
 
+    // Pour les erreurs 403/404, on retourne un statut 200 avec les données d'erreur
+    // Cela permet au frontend de gérer l'erreur gracieusement sans écran blanc
+    if (response.status === 403 || response.status === 404) {
+      console.log(`[Yeti API Proxy] Permission denied or not found for ${endpoint}`);
+      return new Response(
+        JSON.stringify({ 
+          data: null, 
+          error: response.status === 403 ? 'Permission denied' : 'Not found',
+          status: response.status 
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify(responseData),
       { 
