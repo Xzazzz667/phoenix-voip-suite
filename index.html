@@ -41,6 +41,12 @@
     </script>
     
     <!-- Zoho Desk ASAP - Assistance & Ressources -->
+    <style>
+      /* Décaler le widget Zoho Desk pour éviter la superposition avec SalesIQ */
+      #zohodesk-asap-web-launcherbox {
+        bottom: 80px !important;
+      }
+    </style>
     <script type="text/javascript" id="zohodeskasap">
       var d=document;
       s=d.createElement("script");
@@ -53,6 +59,12 @@
       window.ZohoDeskAsapReady=function(s){
         var e=window.ZohoDeskAsap__asyncalls=window.ZohoDeskAsap__asyncalls||[];
         window.ZohoDeskAsapReadyStatus?(s&&e.push(s),e.forEach(s=>s&&s()),window.ZohoDeskAsap__asyncalls=null):s&&e.push(s);
+      };
+      // Fonction globale pour ouvrir la FAQ
+      window.openZohoFAQ = function() {
+        if (window.ZohoDeskAsap && window.ZohoDeskAsap.invoke) {
+          window.ZohoDeskAsap.invoke('open', 'kb');
+        }
       };
     </script>
   </body>

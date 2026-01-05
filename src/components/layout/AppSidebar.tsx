@@ -15,6 +15,7 @@ import {
   ShoppingCart,
   Shield,
   Activity,
+  BookOpen,
   HelpCircle
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
@@ -87,6 +88,12 @@ const menuItems = [
     title: "Plugins",
     url: "/plugins",
     icon: Puzzle,
+    badge: null
+  },
+  {
+    title: "FAQ",
+    action: "openFAQ",
+    icon: BookOpen,
     badge: null
   },
   {
@@ -183,6 +190,31 @@ export function AppSidebar() {
                     </div>
                   )}
                 </div>
+              ) : item.action ? (
+                // Élément avec action (FAQ)
+                <button
+                  onClick={() => {
+                    if (item.action === "openFAQ" && (window as any).openZohoFAQ) {
+                      (window as any).openZohoFAQ();
+                    }
+                  }}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200",
+                    "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <item.icon className="w-5 h-5" />
+                  {!collapsed && (
+                    <>
+                      <span className="font-medium flex-1 text-left">{item.title}</span>
+                      {item.badge && (
+                        <span className="bg-turquoise text-turquoise-foreground text-xs px-2 py-1 rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </button>
               ) : (
                 // Élément direct
                 <NavLink
