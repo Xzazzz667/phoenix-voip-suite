@@ -16,6 +16,7 @@ import {
   Shield,
   Activity
 } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
 import { NavLink, useLocation } from "react-router-dom"
 import {
   Sidebar,
@@ -92,6 +93,7 @@ const menuItems = [
 export function AppSidebar() {
   const { state } = useSidebar()
   const location = useLocation()
+  const { username } = useAuth()
   const currentPath = location.pathname
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['Configuration'])
   const collapsed = state === 'collapsed'
@@ -201,11 +203,13 @@ export function AppSidebar() {
         <div className="border-t border-sidebar-border p-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-primary-foreground text-sm font-medium">X</span>
+              <span className="text-primary-foreground text-sm font-medium">
+                {username?.charAt(0).toUpperCase() || 'U'}
+              </span>
             </div>
             {!collapsed && (
               <div className="flex-1">
-                <p className="text-sm font-medium text-sidebar-accent-foreground">Xavier Limoges</p>
+                <p className="text-sm font-medium text-sidebar-accent-foreground">{username || 'Utilisateur'}</p>
                 <p className="text-xs text-sidebar-foreground opacity-70">En ligne</p>
               </div>
             )}
