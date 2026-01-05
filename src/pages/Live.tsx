@@ -67,9 +67,9 @@ export default function Live() {
     if (!accountId) return;
     
     try {
-      const fromTime = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      // Utiliser l'endpoint correct: origination_active_calls (underscore) et le bon format de paramètre
       const response = await callApiRef.current(
-        `/origination-active-calls?account-id=${accountId}&from-time=${encodeURIComponent(fromTime)}`,
+        `/origination_active_calls?filter[account-id]=${accountId}`,
         "GET"
       );
       
