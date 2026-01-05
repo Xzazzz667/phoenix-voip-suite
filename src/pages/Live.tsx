@@ -33,6 +33,7 @@ export default function Live() {
   const { callApi } = useYetiApi();
   const [accountId, setAccountId] = useState<string | null>(null);
   const [activeCalls, setActiveCalls] = useState<ActiveCall[]>([]);
+  const [activeCallsError, setActiveCallsError] = useState<string | null>(null);
   const [cpsData, setCpsData] = useState<CPSDataPoint[]>([]);
   const [currentCPS, setCurrentCPS] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -67,12 +68,19 @@ export default function Live() {
     if (!accountId) return;
     
     try {
-      // Utiliser l'endpoint correct: origination_active_calls (underscore) et le bon format de paramètre
       const response = await callApiRef.current(
         `/origination_active_calls?filter[account-id]=${accountId}`,
         "GET"
       );
       
+      // Si response est null, cela signifie probablement une erreur 403
+      if (response === null) {
+        setActiveCallsError("Accès refusé à cette ressource (403)");
+        setActiveCalls([]);
+        return;
+      }
+      
+      setActiveCallsError(null);
       if (response?.data) {
         const calls = Array.isArray(response.data) ? response.data : [];
         setActiveCalls(calls.map((item: any) => ({
@@ -84,6 +92,7 @@ export default function Live() {
       }
     } catch (error) {
       console.warn("Erreur lors de la récupération des appels actifs:", error);
+      setActiveCallsError("Erreur de connexion");
       setActiveCalls([]);
     }
   }, [accountId]);
@@ -345,6 +354,14 @@ export default function Live() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          ) : activeCallsError ? (
+            <div className="py-12 text-center">
+              <Phone className="w-12 h-12 mx-auto mb-4 text-destructive/50" />
+              <p className="text-destructive font-medium">{activeCallsError}</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Votre compte n'a pas les permissions nécessaires pour voir les appels en cours.
+              </p>
             </div>
           ) : (
             <div className="py-12 text-center text-muted-foreground">
