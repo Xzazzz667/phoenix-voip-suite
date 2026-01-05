@@ -237,9 +237,17 @@ export const useAuth = (): AuthContextType => {
 // Hook pour appeler l'API Yeti avec authentification
 export const useYetiApi = () => {
   const { token, logout } = useAuth();
+  const tokenRef = useRef(token);
+  
+  // Keep token ref updated
+  useEffect(() => {
+    tokenRef.current = token;
+  }, [token]);
 
-  const callApi = async (endpoint: string, method: string = 'GET', data?: any) => {
-    if (!token) {
+  const callApi = useCallback(async (endpoint: string, method: string = 'GET', data?: any) => {
+    const currentToken = tokenRef.current;
+    
+    if (!currentToken) {
       throw new Error('Not authenticated');
     }
 
@@ -248,7 +256,7 @@ export const useYetiApi = () => {
       headers: {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_ANON_KEY,
-        'x-yeti-token': token,
+        'x-yeti-token': currentToken,
       },
       body: JSON.stringify({
         endpoint,
@@ -283,7 +291,7 @@ export const useYetiApi = () => {
     }
 
     return responseData;
-  };
+  }, [logout]); // Only depends on logout which is stable
 
   return { callApi };
 };
