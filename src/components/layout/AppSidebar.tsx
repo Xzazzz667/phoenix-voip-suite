@@ -14,7 +14,8 @@ import {
   ChevronRight,
   ShoppingCart,
   Shield,
-  Activity
+  Activity,
+  HelpCircle
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { NavLink, useLocation } from "react-router-dom"
@@ -86,6 +87,12 @@ const menuItems = [
     title: "Plugins",
     url: "/plugins",
     icon: Puzzle,
+    badge: null
+  },
+  {
+    title: "Support",
+    url: "/support",
+    icon: HelpCircle,
     badge: null
   }
 ]

@@ -15,6 +15,7 @@ import Statistics from "./pages/Statistics";
 import CDR from "./pages/CDR";
 import Pricing from "./pages/Pricing";
 import Live from "./pages/Live";
+import Support from "./pages/Support";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -54,6 +55,7 @@ const App = () => (
                           <Route path="/rapport/live" element={<Live />} />
                           <Route path="/campagnes" element={<div className="p-6">Gestion des campagnes</div>} />
                           <Route path="/plugins" element={<div className="p-6">Gestion des plugins</div>} />
+                          <Route path="/support" element={<Support />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                       </main>
