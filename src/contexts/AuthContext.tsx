@@ -266,9 +266,15 @@ export const useYetiApi = () => {
       throw new Error('Session expirée. Veuillez vous reconnecter.');
     }
 
-    // Don't throw for 404 - let the calling code handle missing resources gracefully
-    if (!response.ok && response.status !== 404) {
+    // Don't throw for 404 or 403 - let the calling code handle missing resources/permissions gracefully
+    if (!response.ok && response.status !== 404 && response.status !== 403) {
       throw new Error(responseData.error || 'API call failed');
+    }
+
+    // Return null for 403 to indicate access denied (silently handle permission issues)
+    if (response.status === 403) {
+      console.warn(`Access denied for endpoint: ${endpoint}`);
+      return null;
     }
 
     // Return null for 404 to indicate resource not found
