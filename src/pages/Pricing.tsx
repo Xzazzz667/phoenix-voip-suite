@@ -100,11 +100,15 @@ const Pricing: React.FC = () => {
     setIsLoadingRateplans(true);
     try {
       const response = await callApi('/rateplans', 'GET');
-      if (response && response.data) {
+      if (response?.data) {
         setRateplans(response.data);
+      } else {
+        // API returned null (403) or no data
+        setRateplans([]);
       }
     } catch (err) {
       console.error('Error loading rateplans:', err);
+      setRateplans([]);
     } finally {
       setIsLoadingRateplans(false);
     }
@@ -114,11 +118,15 @@ const Pricing: React.FC = () => {
     setIsLoadingCountries(true);
     try {
       const response = await callApi('/countries?page[size]=300', 'GET');
-      if (response && response.data) {
+      if (response?.data) {
         setCountries(response.data);
+      } else {
+        // API returned null (403) or no data
+        setCountries([]);
       }
     } catch (err) {
       console.error('Error loading countries:', err);
+      setCountries([]);
     } finally {
       setIsLoadingCountries(false);
     }
