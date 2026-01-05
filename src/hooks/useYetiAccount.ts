@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useYetiApi } from '@/contexts/AuthContext';
 
 interface AccountStats {
@@ -12,15 +12,32 @@ interface AccountStats {
   refetch: () => void;
 }
 
+// Singleton cache to prevent multiple components from triggering duplicate requests
+let globalCache: {
+  data: Omit<AccountStats, 'isLoading' | 'error' | 'refetch'> | null;
+  lastFetch: number;
+  fetchPromise: Promise<void> | null;
+} = {
+  data: null,
+  lastFetch: 0,
+  fetchPromise: null,
+};
+
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
 export function useYetiAccount(): AccountStats {
-  const [balance, setBalance] = useState<number>(0);
-  const [currency, setCurrency] = useState<string>('EUR');
-  const [callsThisMonth, setCallsThisMonth] = useState<number>(0);
-  const [totalDuration, setTotalDuration] = useState<string>('0h 0m');
-  const [activeUsers, setActiveUsers] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [balance, setBalance] = useState<number>(globalCache.data?.balance ?? 0);
+  const [currency, setCurrency] = useState<string>(globalCache.data?.currency ?? 'EUR');
+  const [callsThisMonth, setCallsThisMonth] = useState<number>(globalCache.data?.callsThisMonth ?? 0);
+  const [totalDuration, setTotalDuration] = useState<string>(globalCache.data?.totalDuration ?? '0h 0m');
+  const [activeUsers, setActiveUsers] = useState<number>(globalCache.data?.activeUsers ?? 0);
+  const [isLoading, setIsLoading] = useState(!globalCache.data);
   const [error, setError] = useState<string | null>(null);
   const { callApi } = useYetiApi();
+  
+  const isMountedRef = useRef(true);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const formatDuration = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
@@ -28,91 +45,133 @@ export function useYetiAccount(): AccountStats {
     return `${hours}h ${minutes}m`;
   };
 
-  const fetchAccountData = useCallback(async () => {
+  const updateLocalState = useCallback(() => {
+    if (globalCache.data && isMountedRef.current) {
+      setBalance(globalCache.data.balance);
+      setCurrency(globalCache.data.currency);
+      setCallsThisMonth(globalCache.data.callsThisMonth);
+      setTotalDuration(globalCache.data.totalDuration);
+      setActiveUsers(globalCache.data.activeUsers);
+    }
+  }, []);
+
+  const fetchAccountData = useCallback(async (forceRefresh = false) => {
+    const now = Date.now();
+    
+    // Return cached data if still valid and not forcing refresh
+    if (!forceRefresh && globalCache.data && (now - globalCache.lastFetch) < CACHE_TTL) {
+      updateLocalState();
+      setIsLoading(false);
+      return;
+    }
+    
+    // If a fetch is already in progress, wait for it
+    if (globalCache.fetchPromise) {
+      await globalCache.fetchPromise;
+      updateLocalState();
+      setIsLoading(false);
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     
-    try {
-      // Fetch accounts list (JSON:API format: data.attributes)
-      const accountsResponse = await callApi('/accounts', 'GET');
-      
-      // Parse JSON:API response format
-      let accountData = null;
-      if (accountsResponse?.data) {
-        // JSON:API format: { data: [{ id, type, attributes: {...} }] }
-        const dataArray = Array.isArray(accountsResponse.data) ? accountsResponse.data : [accountsResponse.data];
-        if (dataArray.length > 0) {
-          accountData = dataArray[0].attributes || dataArray[0];
-        }
-      } else if (Array.isArray(accountsResponse)) {
-        // Fallback: direct array format
-        accountData = accountsResponse[0];
-      } else {
-        accountData = accountsResponse;
-      }
-      
-      console.log('[useYetiAccount] Account data:', accountData);
-      
-      if (accountData?.balance !== undefined) {
-        setBalance(parseFloat(accountData.balance) || 0);
-      }
-      if (accountData?.['balance-currency'] || accountData?.balance_currency) {
-        setCurrency(accountData['balance-currency'] || accountData.balance_currency);
-      }
-
-      // Fetch CDR stats for this month
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const startDate = startOfMonth.toISOString().split('T')[0];
-      const endDate = now.toISOString().split('T')[0];
-      
+    globalCache.fetchPromise = (async () => {
       try {
-        const cdrsResponse = await callApi(`/cdrs?filter[time_start_gteq]=${startDate}&filter[time_start_lteq]=${endDate}`, 'GET');
+        // Fetch accounts list (JSON:API format: data.attributes)
+        const accountsResponse = await callApi('/accounts', 'GET');
         
-        // Parse JSON:API format
-        const cdrsData = cdrsResponse?.data || cdrsResponse;
-        if (Array.isArray(cdrsData)) {
-          setCallsThisMonth(cdrsData.length);
-          const totalSeconds = cdrsData.reduce((acc: number, cdr: any) => {
-            const cdrAttrs = cdr.attributes || cdr;
-            return acc + (parseInt(cdrAttrs.duration) || 0);
-          }, 0);
-          setTotalDuration(formatDuration(totalSeconds));
+        // Parse JSON:API response format
+        let accountData = null;
+        if (accountsResponse?.data) {
+          const dataArray = Array.isArray(accountsResponse.data) ? accountsResponse.data : [accountsResponse.data];
+          if (dataArray.length > 0) {
+            accountData = dataArray[0].attributes || dataArray[0];
+          }
+        } else if (Array.isArray(accountsResponse)) {
+          accountData = accountsResponse[0];
+        } else {
+          accountData = accountsResponse;
         }
-      } catch (cdrsError) {
-        console.warn('Could not fetch CDRs:', cdrsError);
-        // Keep default values if CDRs endpoint fails
-      }
-
-      // Fetch origination gateways count as proxy for active users/connections
-      try {
-        const gatewaysResponse = await callApi('/origination-gateways', 'GET');
         
-        // Parse JSON:API format
-        const gatewaysData = gatewaysResponse?.data || gatewaysResponse;
-        if (Array.isArray(gatewaysData)) {
-          setActiveUsers(gatewaysData.length);
-        }
-      } catch (gatewaysError) {
-        console.warn('Could not fetch gateways:', gatewaysError);
-        // Keep default values if gateways endpoint fails
-      }
+        const newData: Omit<AccountStats, 'isLoading' | 'error' | 'refetch'> = {
+          balance: accountData?.balance !== undefined ? parseFloat(accountData.balance) || 0 : 0,
+          currency: accountData?.['balance-currency'] || accountData?.balance_currency || 'EUR',
+          callsThisMonth: 0,
+          totalDuration: '0h 0m',
+          activeUsers: 0,
+        };
 
-    } catch (err) {
-      console.error('Error fetching account data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch account data');
-    } finally {
+        // Fetch CDR stats for this month
+        const currentDate = new Date();
+        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const startDate = startOfMonth.toISOString().split('T')[0];
+        const endDate = currentDate.toISOString().split('T')[0];
+        
+        try {
+          const cdrsResponse = await callApi(`/cdrs?filter[time_start_gteq]=${startDate}&filter[time_start_lteq]=${endDate}`, 'GET');
+          const cdrsData = cdrsResponse?.data || cdrsResponse;
+          if (Array.isArray(cdrsData)) {
+            newData.callsThisMonth = cdrsData.length;
+            const totalSeconds = cdrsData.reduce((acc: number, cdr: any) => {
+              const cdrAttrs = cdr.attributes || cdr;
+              return acc + (parseInt(cdrAttrs.duration) || 0);
+            }, 0);
+            newData.totalDuration = formatDuration(totalSeconds);
+          }
+        } catch (cdrsError) {
+          console.warn('Could not fetch CDRs:', cdrsError);
+        }
+
+        // Fetch origination gateways count
+        try {
+          const gatewaysResponse = await callApi('/origination-gateways', 'GET');
+          const gatewaysData = gatewaysResponse?.data || gatewaysResponse;
+          if (Array.isArray(gatewaysData)) {
+            newData.activeUsers = gatewaysData.length;
+          }
+        } catch (gatewaysError) {
+          console.warn('Could not fetch gateways:', gatewaysError);
+        }
+
+        // Update global cache
+        globalCache.data = newData;
+        globalCache.lastFetch = Date.now();
+        
+      } catch (err) {
+        console.error('Error fetching account data:', err);
+        if (isMountedRef.current) {
+          setError(err instanceof Error ? err.message : 'Failed to fetch account data');
+        }
+      } finally {
+        globalCache.fetchPromise = null;
+      }
+    })();
+    
+    await globalCache.fetchPromise;
+    updateLocalState();
+    if (isMountedRef.current) {
       setIsLoading(false);
     }
-  }, [callApi]);
+  }, [callApi, updateLocalState]);
 
   useEffect(() => {
+    isMountedRef.current = true;
+    
+    // Initial fetch
     fetchAccountData();
     
-    // Refresh every 5 minutes
-    const interval = setInterval(fetchAccountData, 5 * 60 * 1000);
+    // Set up refresh interval
+    intervalRef.current = setInterval(() => {
+      fetchAccountData(true); // Force refresh
+    }, REFRESH_INTERVAL);
     
-    return () => clearInterval(interval);
+    return () => {
+      isMountedRef.current = false;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, [fetchAccountData]);
 
   return {
@@ -123,6 +182,6 @@ export function useYetiAccount(): AccountStats {
     activeUsers,
     isLoading,
     error,
-    refetch: fetchAccountData,
+    refetch: () => fetchAccountData(true),
   };
 }
