@@ -13,7 +13,8 @@ import {
   FileText,
   ChevronRight,
   ShoppingCart,
-  Shield
+  Shield,
+  Activity
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
@@ -67,6 +68,7 @@ const menuItems = [
     title: "Rapport",
     icon: BarChart3,
     items: [
+      { title: "Live", url: "/rapport/live", icon: Activity },
       { title: "Appels sortants", url: "/rapport/outbound", icon: TrendingUp },
       { title: "Appels entrants", url: "/rapport/inbound", icon: TrendingUp },
       { title: "CDR", url: "/rapport/cdr", icon: FileText },
